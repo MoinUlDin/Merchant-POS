@@ -26,11 +26,11 @@ class MainWindow(QMainWindow):
 
     def init_ui(self):
         self.setWindowTitle(t(self.current_lang, "app_title"))
-        self.setMinimumSize(1100, 700)
+        self.setMinimumSize(840, 640)
 
         central = QWidget()
-        main_layout = QVBoxLayout(central)
-        main_layout.setContentsMargins(0, 0, 0, 0)
+        self.main_layout = QVBoxLayout(central)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.setCentralWidget(central)
 
         # ===== TOP TOOLBAR =====
@@ -71,13 +71,13 @@ class MainWindow(QMainWindow):
         self.lang_combo.currentIndexChanged.connect(self.on_lang)
         toolbar_layout.addWidget(self.lang_combo)
 
-        main_layout.addWidget(toolbar)
+        self.main_layout.addWidget(toolbar)
 
         # ===== STACKED SCREENS =====
         self.stack = QStackedLayout()
         container = QWidget()
         container.setLayout(self.stack)
-        main_layout.addWidget(container)
+        self.main_layout.addWidget(container)
 
         # Screens
         self.dashboard_screen = QWidget()
@@ -90,7 +90,8 @@ class MainWindow(QMainWindow):
         )
 
         self.product_form_screen = ProductFormScreen(
-            on_back=lambda: self.switch("products_list")
+            on_back=lambda: self.switch("products_list"),
+            on_saved=self.on_product_saved
         )
 
         self.screens = {
@@ -106,7 +107,13 @@ class MainWindow(QMainWindow):
 
         self.switch("dashboard")
         self.apply_language()
-
+        self.apply_styles()
+    
+    def apply_styles(self):
+        # self.setStyleSheet("background-color: white")
+        pass
+        
+        
     def switch(self, key):
         widget = self.screens.get(key)
         if widget:
@@ -119,6 +126,14 @@ class MainWindow(QMainWindow):
     def open_edit_product(self, product_id):
         self.product_form_screen.load_existing(product_id)
         self.switch("product_form")
+    
+    def on_product_saved(self):
+        # refresh list and return to list view
+        try:
+            self.products_list_screen.refresh_products()
+        except Exception:
+            pass
+        self.switch("products_list")
 
     def open_change_password(self):
         dlg = ChangePasswordDialog(get_lang=lambda: self.current_lang, parent=self)

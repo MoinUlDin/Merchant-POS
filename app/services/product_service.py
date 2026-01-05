@@ -9,7 +9,7 @@ class ProductService:
     def all_products(self):
         cur = self.conn.cursor()
         cur.execute("""
-            SELECT id, ur_name, en_name, company,
+            SELECT id, ur_name, en_name, company, barcode,
                    base_price, sell_price,
                    stock_qty, reorder_threshold
             FROM products
@@ -63,3 +63,4 @@ class ProductService:
             product_id
         ))
         self.conn.commit()
+        return True

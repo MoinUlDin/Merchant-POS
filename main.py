@@ -35,7 +35,7 @@ def main():
 
     urdu_font = load_urdu_font()
     if urdu_font:
-        font = QFont(urdu_font, 16)
+        font = QFont(urdu_font, 14)
         # 🔹 Increase letter spacing for Urdu
         # AbsoluteSpacing = pixels between glyphs
         font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 1.6)
