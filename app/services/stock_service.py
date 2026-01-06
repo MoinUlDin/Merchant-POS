@@ -36,15 +36,10 @@ class StockService:
             product_unit, current_stock = p[0], float(p[1] or 0.0)
             action_unit = unit if unit is not None else product_unit
 
-            # convert cost_total to integer paisa if needed
             cost_total_paisa = None
             if cost_total is not None:
                 try:
-                    # if already int assume paisa; otherwise treat as rupees
-                    if isinstance(cost_total, int):
-                        cost_total_paisa = int(cost_total)
-                    else:
-                        cost_total_paisa = int(round(float(cost_total) * 100))
+                    cost_total_paisa = int(cost_total)
                 except Exception:
                     cost_total_paisa = None
 
@@ -96,6 +91,7 @@ class StockService:
             raise ValueError("product not found")
         pack_size = float(row[0] or 1.0)
         added_qty = pack_size * int(num_packs)
+        print(f"productId: {id}, size: {pack_size}, Added: {added_qty}")
         return self.record_movement(product_id=product_id, qty=added_qty, reason=reason,
                                     reference_id=reference_id, cost_total=cost_total, created_by=created_by)
 

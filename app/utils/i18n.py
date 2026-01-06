@@ -15,6 +15,7 @@ TRANSLATIONS = {
         "change_password":"Change Password",
         "save_product": "Save",
         "add_product": "New Product",
+        "stock_reorder": "Stock Reorder",
     },
     "ur":{
         "app_title":"معین کریانہ اسٹور",
@@ -31,6 +32,7 @@ TRANSLATIONS = {
         "change_password":"پاس ورڈ تبدیل کریں",
         "save_product": "محفوظ کریں",
         "add_product": "نیا پروڈکٹ",
+        "stock_reorder": "اسٹاک ری آرڈر",
     }
 }
 

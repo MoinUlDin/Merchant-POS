@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
     QPushButton, QComboBox, QStackedLayout
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QIcon
 from pathlib import Path
 
@@ -10,14 +10,19 @@ from app.utils.i18n import t
 from app.windows.change_password_dialog import ChangePasswordDialog
 from app.windows.products_list_screen import ProductsListScreen
 from app.windows.product_form_screen import ProductFormScreen
+from app.windows.stock_movement_form import StockMovementForm
 
 
 class MainWindow(QMainWindow):
+    language_changed = pyqtSignal()
+    
     def __init__(self, urdu_font_family=None):
         super().__init__()
         self.urdu_font_family = urdu_font_family
         self.current_lang = "ur"
         self.init_ui()
+        self.connect_actions()
+        
 
     def icon(self, name: str):
         root = Path(__file__).resolve().parents[2] / "resources" / "icons"
@@ -40,19 +45,18 @@ class MainWindow(QMainWindow):
 
         self.btn_dashboard = QPushButton(t(self.current_lang, "dashboard"))
         self.btn_dashboard.setIcon(self.icon("home"))
-        self.btn_dashboard.clicked.connect(lambda: self.switch("dashboard"))
+        
 
         self.btn_pos = QPushButton(t(self.current_lang, "pos"))
         self.btn_pos.setIcon(self.icon("shopping-cart"))
-        self.btn_pos.clicked.connect(lambda: self.switch("pos"))
+        
 
         self.btn_products = QPushButton(t(self.current_lang, "products"))
         self.btn_products.setIcon(self.icon("box"))
-        self.btn_products.clicked.connect(lambda: self.switch("products_list"))
 
         self.btn_reports = QPushButton(t(self.current_lang, "reports"))
         self.btn_reports.setIcon(self.icon("bar-chart-2"))
-        self.btn_reports.clicked.connect(lambda: self.switch("reports"))
+        
 
         toolbar_layout.addWidget(self.btn_dashboard)
         toolbar_layout.addWidget(self.btn_pos)
@@ -62,13 +66,11 @@ class MainWindow(QMainWindow):
 
         self.btn_change_pw = QPushButton(t(self.current_lang, "change_password"))
         self.btn_change_pw.setIcon(self.icon("key"))
-        self.btn_change_pw.clicked.connect(self.open_change_password)
         toolbar_layout.addWidget(self.btn_change_pw)
 
         self.lang_combo = QComboBox()
         self.lang_combo.addItem("اردو", "ur")
         self.lang_combo.addItem("English", "en")
-        self.lang_combo.currentIndexChanged.connect(self.on_lang)
         toolbar_layout.addWidget(self.lang_combo)
 
         self.main_layout.addWidget(toolbar)
@@ -86,12 +88,18 @@ class MainWindow(QMainWindow):
 
         self.products_list_screen = ProductsListScreen(
             on_add=self.open_add_product,
-            on_edit=self.open_edit_product
+            on_edit=self.open_edit_product,
+            on_stock_reorder=self.open_stock_movement,
+            get_lang=lambda: self.current_lang,
         )
 
         self.product_form_screen = ProductFormScreen(
             on_back=lambda: self.switch("products_list"),
-            on_saved=self.on_product_saved
+            on_saved=self.on_product_saved,
+            get_lang=lambda: self.current_lang,
+        )
+        self.stock_movement_form = StockMovementForm(
+            on_back=lambda: self.switch("products_list"),
         )
 
         self.screens = {
@@ -100,6 +108,7 @@ class MainWindow(QMainWindow):
             "products_list": self.products_list_screen,
             "product_form": self.product_form_screen,
             "reports": self.reports_screen,
+            'stock_movement_form': self.stock_movement_form,
         }
 
         for screen in self.screens.values():
@@ -110,8 +119,26 @@ class MainWindow(QMainWindow):
         self.apply_styles()
     
     def apply_styles(self):
-        # self.setStyleSheet("background-color: white")
         pass
+    
+    def connect_actions(self):
+        self.btn_dashboard.clicked.connect(lambda: self.switch("dashboard"))
+        self.btn_products.clicked.connect(lambda: self.switch("products_list"))
+        self.btn_pos.clicked.connect(lambda: self.switch("pos"))
+        self.btn_reports.clicked.connect(lambda: self.switch("reports"))
+        self.btn_change_pw.clicked.connect(self.open_change_password)
+        self.lang_combo.currentIndexChanged.connect(self.on_lang)
+        
+        # on Language Change inform children to upate
+        self.language_changed.connect(self.products_list_screen.refresh_products)
+        self.language_changed.connect(self.product_form_screen.apply_language)
+        self.stock_movement_form.movement_recorded.connect(lambda pid, new_stock: self.products_list_screen.refresh_products())
+
+        # self.products_list_screen.edit_requested.connect(self.open_edit_product)
+        # self.products_list_screen.stock_movement_requested.connect(self.open_stock_movement)
+        # self.stock_movement_form.movement_recorded.connect(self.on_stock_movement_recorded)
+        # self.product_form_screen.product_saved.connect(self.on_product_saved)
+        
         
         
     def switch(self, key):
@@ -123,6 +150,10 @@ class MainWindow(QMainWindow):
         self.product_form_screen.load_new()
         self.switch("product_form")
 
+    def open_stock_movement(self):
+        self.stock_movement_form.load_new()
+        self.switch("stock_movement_form")
+        
     def open_edit_product(self, product_id):
         self.product_form_screen.load_existing(product_id)
         self.switch("product_form")
@@ -142,7 +173,9 @@ class MainWindow(QMainWindow):
     def on_lang(self):
         self.current_lang = self.lang_combo.currentData()
         self.apply_language()
-
+        self.language_changed.emit()
+    
+    
     def apply_language(self):
         if self.current_lang == "ur":
             self.setLayoutDirection(Qt.LayoutDirection.RightToLeft)

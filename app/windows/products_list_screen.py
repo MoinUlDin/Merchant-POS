@@ -10,19 +10,26 @@ from ..services.product_service import ProductService
 
 
 class ProductsListScreen(QWidget):
-    def __init__(self, on_add, on_edit, get_lang=lambda: "ur"):
+    def __init__(self, on_add, on_edit, on_stock_reorder, get_lang=lambda: "ur"):
         super().__init__()
         self.on_add = on_add
         self.on_edit = on_edit
         self.get_lang = get_lang
+        self.on_stock_reorder = on_stock_reorder
         self.product_service = ProductService()
 
         # column width ratios (modern, readable)
-        self._column_ratios = [4, 2, 2, 2, 2, 2, 1, 2, 2, 2]
+        self._column_ratios = [3, 2, 2, 2, 2, 2, 1, 2, 2, 2]
 
         self.init_ui()
         self.apply_styles()
+        self.connect_actions()
 
+    def connect_actions(self):
+        self.btn_add.clicked.connect(self.on_add)
+        self.table.cellDoubleClicked.connect(self.handle_edit)
+        self.btn_stock_reorder.clicked.connect(self.on_stock_reorder)
+           
     def init_ui(self):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(24, 16, 24, 16)
@@ -35,14 +42,14 @@ class ProductsListScreen(QWidget):
         header.addStretch()
 
         self.btn_add = QPushButton()
-        self.btn_add.clicked.connect(self.on_add)
+        self.btn_stock_reorder = QPushButton() 
         header.addWidget(self.btn_add)
+        header.addWidget(self.btn_stock_reorder)
 
         layout.addLayout(header)
 
         # ---------- Table ----------
         self.table = QTableWidget(0, 0)
-        self.table.cellDoubleClicked.connect(self.handle_edit)
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.setAlternatingRowColors(True)
@@ -70,7 +77,7 @@ class ProductsListScreen(QWidget):
                 "قیمت خرید", "قیمت فروخت",
                 "اسٹاک", "یونٹ",
                 "کھلا وزن", "پیکنگ سائز",
-                "کم از کم اسٹاک"
+                "کم اسٹاک"
             ]
         else:
             headers = [
@@ -86,7 +93,7 @@ class ProductsListScreen(QWidget):
         self.table.setRowCount(len(rows))
 
         header = self.table.horizontalHeader()
-        header.setMinimumSectionSize(40)
+        header.setMinimumSectionSize(80)
         header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
 
         # ---------- Helpers ----------
@@ -139,11 +146,18 @@ class ProductsListScreen(QWidget):
                     item.setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
                 self.table.setItem(r, i, item)
+                
+        self._apply_language(lang=lang)
 
+    def _apply_language(self, lang=None):
         # labels
-        self.title.setText("📦 " + t(self.get_lang(), "products"))
-        self.btn_add.setText("＋ " + t(self.get_lang(), "add_product"))
-
+        if lang is None:
+            lang = self.get_lang() or 'ur'
+            
+        self.title.setText("📦 " + t(lang, "products"))
+        self.btn_add.setText("＋ " + t(lang, "add_product"))
+        self.btn_stock_reorder.setText(t(lang, "stock_reorder"))
+        
         QTimer.singleShot(0, self._apply_column_ratios)
 
     # --------------------------------------------------
@@ -166,15 +180,18 @@ class ProductsListScreen(QWidget):
                 border: 1px solid #dcdcdc;
                 border-radius: 6px;
                 gridline-color: #eeeeee;
+                font-size: 16px;
             }
             QHeaderView::section {
                 background: #f5f7fa;
                 padding: 6px;
                 border: none;
-                font-weight: 600;
+                font-weight: 500;
+                font-size: 18px;  
             }
             QTableView::item {
-                padding: 6px;
+                padding: 4px;
+                font-size: 12px;
             }
         """)
 
